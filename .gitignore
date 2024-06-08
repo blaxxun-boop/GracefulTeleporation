@@ -1,0 +1,6 @@
+bin
+obj
+/packages
+GracefulTeleportation.sln.DotSettings.user
+.idea
+.vs
