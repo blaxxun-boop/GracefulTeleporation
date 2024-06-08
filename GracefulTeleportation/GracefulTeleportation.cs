@@ -14,8 +14,8 @@ namespace GracefulTeleportation;
 [BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
 public class GracefulTeleportation : BaseUnityPlugin
 {
-	private const string ModName = "GracefulTeleportation";
-	private const string ModVersion = "1.0.0";
+	private const string ModName = "Graceful Teleportation";
+	private const string ModVersion = "1.0.1";
 	private const string ModGUID = "org.bepinex.plugins.gracefulteleportation";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -66,7 +66,19 @@ public class GracefulTeleportation : BaseUnityPlugin
 		{
 			if (__result && Player.m_localPlayer?.IsTeleporting() == false)
 			{
-				Player.m_localPlayer?.GetSEMan().RemoveStatusEffect("Grace".GetStableHashCode());
+				Player.m_localPlayer.GetSEMan().RemoveStatusEffect("Grace".GetStableHashCode());
+			}
+		}
+	}
+
+	private class GraceEffect : StatusEffect
+	{
+		public override void Stop()
+		{
+			base.Stop();
+			if (m_character.m_nview.GetZDO() is { } zdo)
+			{
+				zdo.Set("Graceful Teleportation Grace", false);
 			}
 		}
 	}
@@ -78,7 +90,7 @@ public class GracefulTeleportation : BaseUnityPlugin
 
 		private static void Postfix(ObjectDB __instance)
 		{
-			grace = ScriptableObject.CreateInstance<StatusEffect>();
+			grace = ScriptableObject.CreateInstance<GraceEffect>();
 			grace.name = "Grace";
 			grace.m_name = "Grace";
 			grace.m_icon = loadSprite("grace.png", 64, 64);
@@ -116,7 +128,7 @@ public class GracefulTeleportation : BaseUnityPlugin
 	private static class LeaveMeAlone
 	{
 		private static readonly FieldInfo skipTarget = AccessTools.DeclaredField(typeof(Character), nameof(Character.m_aiSkipTarget));
-		private static bool hasGrace(Character character, bool originalValue) => originalValue || (character is Player player && player.GetSEMan().HaveStatusEffect("Grace".GetStableHashCode()));
+		private static bool hasGrace(Character character, bool originalValue) => originalValue || (character is Player player && player.m_nview.GetZDO().GetBool("Graceful Teleportation Grace"));
 		
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
 		{
@@ -144,6 +156,7 @@ public class GracefulTeleportation : BaseUnityPlugin
 			if (__result)
 			{
 				__instance.GetSEMan().AddStatusEffect("Grace".GetStableHashCode());
+				__instance.m_nview.GetZDO().Set("Graceful Teleportation Grace", true);
 			}
 		}
 	}
